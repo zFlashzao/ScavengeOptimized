@@ -13,6 +13,20 @@ if (parseFloat(game_data.majorVersion) < 8.177) {
     duration_initial_seconds = scavengeInfo[1].duration_initial_seconds;
 }
 else {
+    if (window.ScavengeScreen && window.ScavengeScreen.village && window.ScavengeScreen.village.options) {
+        duration_factor = window.ScavengeScreen.village.options[1].base.duration_factor;
+        duration_exponent = window.ScavengeScreen.village.options[1].base.duration_exponent;
+        duration_initial_seconds = window.ScavengeScreen.village.options[1].base.duration_initial_seconds;
+    } else {
+        console.error("ScavengeScreen or village is undefined. Restarting the script.");
+        setTimeout(function() {
+            location.reload();  // Reinicia o script em caso de erro
+        }, 2000);
+        return;  // Interrompe a execução do código até o reload
+    }
+}
+
+else {
     duration_factor = window.ScavengeScreen.village.options[1].base.duration_factor;
     duration_exponent = window.ScavengeScreen.village.options[1].base.duration_exponent;
     duration_initial_seconds = window.ScavengeScreen.village.options[1].base.duration_initial_seconds;
