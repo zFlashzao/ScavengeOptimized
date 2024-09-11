@@ -39,7 +39,7 @@ async function run_all()
     if (window.location.href.indexOf('screen=place&mode=scavenge') < 0) {
         window.location.assign(game_data.link_base_pure + "place&mode=scavenge");
     }
-    createInterface();
+    createInterfaceWithRetry();
     startWorker();
 
     $.ajax({url:window.location.href.split("scavenge")[0] + "units", success:successfunc});
@@ -295,6 +295,29 @@ function createInterface()
         $("#" + key).prop('checked', value);
     });
 }
+
+async function createInterfaceWithRetry() {
+    // Tenta criar a interface se ainda não foi criada
+    if ($('button').length == 0) {
+        createInterface();
+    } else {
+        console.log("Interface já criada");
+    }
+
+    // Verifica novamente após 4 segundos se a interface foi criada
+    setTimeout(function() {
+        if ($('button').length == 0) {
+            console.log("Tentando novamente...");
+            createInterfaceWithRetry(); // Recursivamente tenta novamente
+        } else {
+            console.log("Interface criada com sucesso!");
+        }
+    }, 4000);
+}
+
+// Chame a função modificada
+createInterfaceWithRetry();
+
 
 function checkboxStatus(availableUnits) {
     if (document.getElementById("spear").checked == false) {
