@@ -6,31 +6,49 @@ var nsteps = 200;
 var worker; //parallel thread for calculations
 var has_archer = game_data.units.includes("archer");
 var duration_factor, duration_exponent, duration_initial_seconds;
+async function waitForVillageData() {
+    // Verifica a existência de ScavengeScreen e village a cada 500ms
+    return new Promise((resolve, reject) => {
+        const interval = setInterval(() => {
+            if (window.ScavengeScreen && window.ScavengeScreen.village && window.ScavengeScreen.village.options) {
+                clearInterval(interval);
+                resolve(true);
+            }
+        }, 500);
+
+        // Se após 10 segundos não encontrar village, exibe erro
+        setTimeout(() => {
+            clearInterval(interval);
+            reject("ScavengeScreen or village data not available.");
+        }, 10000);
+    });
+}
+
+async function initializeScavenge() {
+    try {
+        await waitForVillageData();  // Espera o village ser carregado
+
+        duration_factor = window.ScavengeScreen.village.options[1].base.duration_factor;
+        duration_exponent = window.ScavengeScreen.village.options[1].base.duration_exponent;
+        duration_initial_seconds = window.ScavengeScreen.village.options[1].base.duration_initial_seconds;
+
+    } catch (error) {
+        console.error(error);
+        setTimeout(() => {
+            location.reload();  // Reinicia o script em caso de erro
+        }, 2000);
+    }
+}
+
 if (parseFloat(game_data.majorVersion) < 8.177) {
     var scavengeInfo = JSON.parse($('html').find('script:contains("ScavengeScreen")').html().match(/\{.*\:\{.*\:.*\}\}/g)[0]);
     duration_factor = scavengeInfo[1].duration_factor;
     duration_exponent = scavengeInfo[1].duration_exponent;
     duration_initial_seconds = scavengeInfo[1].duration_initial_seconds;
-}
-else {
-    if (window.ScavengeScreen && window.ScavengeScreen.village && window.ScavengeScreen.village.options) {
-        duration_factor = window.ScavengeScreen.village.options[1].base.duration_factor;
-        duration_exponent = window.ScavengeScreen.village.options[1].base.duration_exponent;
-        duration_initial_seconds = window.ScavengeScreen.village.options[1].base.duration_initial_seconds;
-    } else {
-        console.error("ScavengeScreen or village is undefined. Restarting the script.");
-        setTimeout(function() {
-            location.reload();  // Reinicia o script em caso de erro
-        }, 2000);
-        return;  // Interrompe a execução do código até o reload
-    }
+} else {
+    initializeScavenge();  // Inicializa a função para carregar os dados de Scavenge
 }
 
-else {
-    duration_factor = window.ScavengeScreen.village.options[1].base.duration_factor;
-    duration_exponent = window.ScavengeScreen.village.options[1].base.duration_exponent;
-    duration_initial_seconds = window.ScavengeScreen.village.options[1].base.duration_initial_seconds;
-}
 var hours = 6;
 var max_spear = -1;
 var max_sword = -1;
