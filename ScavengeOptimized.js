@@ -67,15 +67,24 @@ var lootFactors = {0:0.1,1:0.25,2:0.5,3:0.75};
 //PROGRAM VARIABLES
 
 
-async function run_all()
-{
+async function run_all() {
+    if (isScriptRunning) {
+        return;  // Impede a execução duplicada
+    }
+
+    isScriptRunning = true;  // Marca o script como em execução
+
     if (window.location.href.indexOf('screen=place&mode=scavenge') < 0) {
         window.location.assign(game_data.link_base_pure + "place&mode=scavenge");
     }
+
     createInterfaceWithRetry();
     startWorker();
 
-    $.ajax({url:window.location.href.split("scavenge")[0] + "units", success:successfunc});
+    $.ajax({
+        url: window.location.href.split("scavenge")[0] + "units",
+        success: successfunc
+    });
 
     setTimeout(function(){
         console.log("changing_page");
@@ -85,9 +94,10 @@ async function run_all()
         setTimeout(function(){
             console.log("reloading");
             location.reload();
-       }, 2000)
-    }, refresh_time*1000*(1 + 0.2*Math.random()));
+        }, 2000);
+    }, refresh_time * 1000 * (1 + 0.2 * Math.random()));
 }
+
 
 function myconsolelog(arg)
 {
@@ -329,7 +339,16 @@ function createInterface()
     });
 }
 
+var isScriptRunning = false;  // Flag para controlar a execução do script
+
 async function createInterfaceWithRetry() {
+    if (isScriptRunning) {
+        return;  // Se o script já estiver rodando, não executa novamente
+    }
+
+    // Marca o script como em execução
+    isScriptRunning = true;
+
     // Tenta criar a interface se ainda não foi criada
     if ($('button').length == 0) {
         createInterface();
@@ -337,16 +356,22 @@ async function createInterfaceWithRetry() {
         console.log("Interface já criada");
     }
 
-    // Verifica novamente após 4 segundos se a interface foi criada
+    // Verifica novamente após 6 segundos se a interface foi criada
     setTimeout(function() {
         if ($('button').length == 0) {
             console.log("Tentando novamente...");
             createInterfaceWithRetry(); // Recursivamente tenta novamente
         } else {
             console.log("Interface criada com sucesso!");
+
+            // Adiciona um delay de 3 segundos antes de inserir os valores
+            setTimeout(function() {
+                inputMemory();  // Função que insere os valores nos campos
+            }, 3000);  // Delay adicional de 3 segundos para o input
         }
-    }, 4000);
+    }, 6000); // Aumenta o delay para 6 segundos entre as verificações
 }
+
 
 // Chame a função modificada
 createInterfaceWithRetry();
