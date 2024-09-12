@@ -68,12 +68,6 @@ var lootFactors = {0:0.1,1:0.25,2:0.5,3:0.75};
 
 
 async function run_all() {
-    if (isScriptRunning) {
-        return;  // Impede a execução duplicada
-    }
-
-    isScriptRunning = true;  // Marca o script como em execução
-
     if (window.location.href.indexOf('screen=place&mode=scavenge') < 0) {
         window.location.assign(game_data.link_base_pure + "place&mode=scavenge");
     }
@@ -551,15 +545,23 @@ function get_optimal_factors(units, availableScavanges)
     worker.postMessage(JSON.stringify({args:[totalHaul, arrayfactor, [duration_factor, duration_exponent, duration_initial_seconds]], otherStuff: [units, availableScavanges]})); // Start the worker.
 }
 
+var isCalculating = false;  // Flag para controle do cálculo
+
 function run(availableScavanges, unitsToUse) {
+    if (isCalculating) {
+        return;  // Se já estiver calculando, evita execução duplicada
+    }
+    
+    isCalculating = true;  // Marca como cálculo em progresso
+
     myconsolelog("initial unitsToUse");
     myconsolelog(unitsToUse);
     var units = {...unitsToUse};
     get_optimal_factors(units, availableScavanges);
 }
 
-function optimization_callBack(optimization, units, availableScavanges)
-{
+
+function optimization_callBack(optimization, units, availableScavanges) {
     scavangeType = availableScavanges.shift();
     let btn = $("[class*='free_send_button']",$($("[class^='scavenge-option']")[scavangeType]))[0];
     console.log(btn)
@@ -572,27 +574,28 @@ function optimization_callBack(optimization, units, availableScavanges)
     myconsolelog("leftest_optimal");    
     myconsolelog(leftest_optimal);
 
-    $.each(units, function(key, val){units[key] = parseInt(leftest_optimal*val)})
-    var predHaul =lootFactors[scavangeType] * calculateHaul(units);
+    $.each(units, function(key, val){units[key] = parseInt(leftest_optimal*val)});
+    var predHaul = lootFactors[scavangeType] * calculateHaul(units);
 
     var time = hours * 3600;
     var maxhaul = ((time / duration_factor - duration_initial_seconds) ** (1 / (duration_exponent)) / 100) ** (1 / 2);
 
-    if(predHaul > maxhaul)
-        $.each(units, function(key, val){units[key] = maxhaul/predHaul *val});
+    if (predHaul > maxhaul) {
+        $.each(units, function(key, val){units[key] = maxhaul / predHaul * val});
+    }
 
-    myconsolelog("unitsToUse before subtracting")
+    myconsolelog("unitsToUse before subtracting");
     myconsolelog(unitsToUse);
-    let unitsPopulation ={"spear":1, "sword":1, "axe":1, "archer":1, "spy":2, "light":4, "marcher":5, "heavy":6, "knight": 10};
+    let unitsPopulation = {"spear":1, "sword":1, "axe":1, "archer":1, "spy":2, "light":4, "marcher":5, "heavy":6, "knight": 10};
     let unitsToUsePopulation = 0;
     $.each(units, function(key, obj){
         unitsToUsePopulation += obj * unitsPopulation[key];
     });
 
-    console.log(unitsToUsePopulation)
+    console.log(unitsToUsePopulation);
 
-    if(unitsToUsePopulation > 10){
-        $.each(units,function(key, obj){
+    if (unitsToUsePopulation > 10) {
+        $.each(units, function(key, obj){
             unitsToUse[key] -= obj;
             $(`input.unitsInput[name='${key}']`).val(obj).trigger("change");
         });
@@ -600,13 +603,14 @@ function optimization_callBack(optimization, units, availableScavanges)
         myconsolelog(unitsToUse);
         btn.click();
     }
-    
-    setTimeout(function(){
-        if(availableScavanges.length > 0)
-            run(availableScavanges, unitsToUse)
-    }, 500*(1+0.2*Math.random()));
-}
 
+    setTimeout(function() {
+        if (availableScavanges.length > 0)
+            run(availableScavanges, unitsToUse);
+    }, 500 * (1 + 0.2 * Math.random()));
+
+    isCalculating = false;  // Libera a flag para permitir novos cálculos
+}
 function successfunc(data)
 {
     var unitNamesArray;
