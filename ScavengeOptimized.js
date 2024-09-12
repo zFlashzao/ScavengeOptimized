@@ -562,54 +562,29 @@ function run(availableScavanges, unitsToUse) {
 
 
 function optimization_callBack(optimization, units, availableScavanges) {
-    scavangeType = availableScavanges.shift();
+    scavangeType = availableScavanges.shift();  // Pega o próximo tipo de coleta disponível
     let btn = $("[class*='free_send_button']",$($("[class^='scavenge-option']")[scavangeType]))[0];
-    console.log(btn)
-    var unitsToUse = {...units};
-    myconsolelog("optimization haul");
-    myconsolelog(optimization[0]);
-    myconsolelog("optimization factors");
-    myconsolelog(optimization[1]);
-    var leftest_optimal = optimization[1].pop();
-    myconsolelog("leftest_optimal");    
-    myconsolelog(leftest_optimal);
+    
+    var unitsToUse = {...units};  // Clona as unidades para evitar modificações diretas
 
-    $.each(units, function(key, val){units[key] = parseInt(leftest_optimal*val)});
-    var predHaul = lootFactors[scavangeType] * calculateHaul(units);
-
-    var time = hours * 3600;
-    var maxhaul = ((time / duration_factor - duration_initial_seconds) ** (1 / (duration_exponent)) / 100) ** (1 / 2);
-
-    if (predHaul > maxhaul) {
-        $.each(units, function(key, val){units[key] = maxhaul / predHaul * val});
-    }
-
-    myconsolelog("unitsToUse before subtracting");
-    myconsolelog(unitsToUse);
-    let unitsPopulation = {"spear":1, "sword":1, "axe":1, "archer":1, "spy":2, "light":4, "marcher":5, "heavy":6, "knight": 10};
-    let unitsToUsePopulation = 0;
-    $.each(units, function(key, obj){
-        unitsToUsePopulation += obj * unitsPopulation[key];
+    // Distribui as tropas proporcionalmente entre as opções disponíveis
+    var totalUnits = Object.values(units).reduce((acc, val) => acc + val, 0);  // Total de tropas
+    var unitsPerOption = Math.floor(totalUnits / availableScavanges.length);  // Tropas por opção de coleta
+    
+    // Para cada tipo de tropa, distribui uma parte para a opção atual
+    $.each(unitsToUse, function(key, val) {
+        unitsToUse[key] = Math.floor((units[key] / totalUnits) * unitsPerOption);  // Distribui proporcionalmente
+        $(`input.unitsInput[name='${key}']`).val(unitsToUse[key]).trigger("change");  // Aplica o valor da tropa
     });
 
-    console.log(unitsToUsePopulation);
+    btn.click();  // Envia as tropas para a coleta
 
-    if (unitsToUsePopulation > 10) {
-        $.each(units, function(key, obj){
-            unitsToUse[key] -= obj;
-            $(`input.unitsInput[name='${key}']`).val(obj).trigger("change");
-        });
-        myconsolelog("unitsToUse after subtracting");
-        myconsolelog(unitsToUse);
-        btn.click();
-    }
-
+    // Chama a função para continuar com as opções restantes
     setTimeout(function() {
-        if (availableScavanges.length > 0)
+        if (availableScavanges.length > 0) {
             run(availableScavanges, unitsToUse);
+        }
     }, 500 * (1 + 0.2 * Math.random()));
-
-    isCalculating = false;  // Libera a flag para permitir novos cálculos
 }
 function successfunc(data)
 {
