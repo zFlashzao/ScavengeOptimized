@@ -6,8 +6,8 @@ var nsteps = 200;
 var worker; //parallel thread for calculations
 var has_archer = game_data.units.includes("archer");
 var duration_factor, duration_exponent, duration_initial_seconds;
-async function waitForVillageData() {
-    // Verifica a existência de ScavengeScreen e village a cada 500ms
+async function waitForScavengeScreen() {
+    // Verifica a existência de ScavengeScreen a cada 500ms
     return new Promise((resolve, reject) => {
         const interval = setInterval(() => {
             if (window.ScavengeScreen && window.ScavengeScreen.village && window.ScavengeScreen.village.options) {
@@ -16,17 +16,17 @@ async function waitForVillageData() {
             }
         }, 500);
 
-        // Se após 10 segundos não encontrar village, exibe erro
+        // Se após 10 segundos não encontrar ScavengeScreen, exibe erro
         setTimeout(() => {
             clearInterval(interval);
-            reject("ScavengeScreen or village data not available.");
+            reject("ScavengeScreen is undefined or village data not available.");
         }, 10000);
     });
 }
 
 async function initializeScavenge() {
     try {
-        await waitForVillageData();  // Espera o village ser carregado
+        await waitForScavengeScreen();  // Espera o ScavengeScreen ser carregado
 
         duration_factor = window.ScavengeScreen.village.options[1].base.duration_factor;
         duration_exponent = window.ScavengeScreen.village.options[1].base.duration_exponent;
@@ -40,13 +40,14 @@ async function initializeScavenge() {
     }
 }
 
+// Verifica se a versão do jogo é inferior ou superior a 8.177
 if (parseFloat(game_data.majorVersion) < 8.177) {
     var scavengeInfo = JSON.parse($('html').find('script:contains("ScavengeScreen")').html().match(/\{.*\:\{.*\:.*\}\}/g)[0]);
     duration_factor = scavengeInfo[1].duration_factor;
     duration_exponent = scavengeInfo[1].duration_exponent;
     duration_initial_seconds = scavengeInfo[1].duration_initial_seconds;
 } else {
-    initializeScavenge();  // Inicializa a função para carregar os dados de Scavenge
+    initializeScavenge();  // Inicializa a função para carregar os dados de ScavengeScreen
 }
 
 var hours = 6;
